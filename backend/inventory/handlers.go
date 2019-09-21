@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -17,19 +19,45 @@ import (
 func Heartbeat(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(200)
-	w.Write([]byte("im awake i swear"))
+	w.Write([]byte("im alive i swear"))
 }
 
 // GetAll returns all of the items in a user's inventory
 func GetAll(w http.ResponseWriter, r *http.Request) {
-	// check cache
-	// false, go to db
+	w.Header().Set("Content-Type", "application/json")
+	client, err := GetClient()
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+	}
+
+	req := &dynamodb.DescribeTableInput{
+		TableName: aws.String("venues"),
+	}
+	result, err := client.DescribeTable(req)
+	if err != nil {
+		fmt.Printf("%s", err)
+	}
+	table := result.Table
+	json.NewEncoder(w).Encode(table)
 }
 
 // GetItem returns the information for a single item
 func GetItem(w http.ResponseWriter, r *http.Request) {
-	// check cache
-	// false go to db
+	w.Header().Set("Content-Type", "application/json")
+	item := Item{
+		ID:          "bruh",
+		Name:        "bruh",
+		Quantity:    1,
+		Purveyour:   "",
+		UnitPrice:   "",
+		UnitWeight:  "",
+		Unit:        "",
+		LastUsed:    "",
+		DateBought:  "",
+		LastUpdated: "",
+	}
+	json.NewEncoder(w).Encode(item)
 }
 
 // AddItem adds an item to a users inventory
