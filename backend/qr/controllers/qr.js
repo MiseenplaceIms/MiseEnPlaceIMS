@@ -4,54 +4,40 @@ const router = express.Router();
 const QRCode = require("qrcode");
 const AWS = require("aws-sdk");
 
-AWS.config.update({ region: "us-east-1", endpoint: "" });
+AWS.config.update({ region: "us-east-1" });
+const docClient = new AWS.DynamoDB.DocumentClient();
 
 router.route("/scan/:v_id/:i_id").get(async (req, res) => {
-  // GET /scan/:v_id/:i_id
-  // -grab from params
-  // -retrieve item object from db, send to client
-
-  // data model (loose): v_id, i_id, qr_code
   const { v_id, i_id } = req.params;
 
   try {
-    const docClient = new AWS.DynamoDB.DocumentClient();
-
+    //todo: reconfigure data model to search for unique v_id AND i_id
     const params = {
       TableName: "venues",
       Key: {
-        venue_id: `${v_id}`,
-        item_id: `${i_id}`
+        venue_id: `${v_id}`
+        // item_id: `${i_id}`
       }
     };
 
-    console.log("Retrieving entry...");
-    const item = await docClient.get(params, (err, data) => {
+    await docClient.get(params, (err, data) => {
       if (err) {
-        console.err(
-          "Unable to retrieve item. Error JSON: ",
-          JSON.stringify(err, null, 2)
-        );
+        res.status(500).json({ message: `Unable to retrieve item: ${err}` });
       } else {
-        console.log("Added read successfully: ", JSON.stringify(data, null, 2));
+        if (data.Item) {
+          res.status(200).json({ item: data.Item });
+        } else {
+          res.status(404).json({ message: "That item does not exist." });
+        }
       }
     });
-
-    res.status(200).json({ item });
   } catch (error) {
-    console.error(error);
+    console.log(error);
     res.status(500).json({ error });
   }
 });
 
 router.route("/generate").post(async (req, res) => {
-  // POST: /generate
-  // - create QR
-  // -stores QR in db by finding matching v_id and item_id
-  // -sends back QR to client
-
-  // endpoint will return the QR code containing venue_id and client_id to the client,
-  // and update the db entry for that
   const { venue_id, item_id } = req.body;
   if (!venue_id || !item_id) {
     return res
@@ -68,26 +54,20 @@ router.route("/generate").post(async (req, res) => {
     //     // post to database
     // }
 
-    const docClient = new AWS.DynamoDB.DocumentClient();
-
     const params = {
       TableName: "venues",
       Item: {
         venue_id: `${venue_id}`,
         item_id: `${item_id}`,
-        qr_code
+        qr_code: qr_code
       }
     };
 
-    console.log("Adding new entry...");
     await docClient.put(params, (err, data) => {
       if (err) {
-        console.err(
-          "Unable to add item. Error JSON: ",
-          JSON.stringify(err, null, 2)
-        );
+        res.status(500).json({ error: `Unable to add item: ${err}` });
       } else {
-        console.log("Added item successfully: ", JSON.stringify(data, null, 2));
+        console.log("success!");
       }
     });
 

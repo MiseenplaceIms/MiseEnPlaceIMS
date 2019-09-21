@@ -13,7 +13,7 @@ server.use(cors(), helmet(), express.json());
 const qrRouter = require("./controllers/qr");
 
 // expose API endpoint
-server.use("/api/qr", qrRouter);
+server.use("/api/qr-code", qrRouter);
 
 server.get("/", (req, res) => {
   res.send("It works!");
