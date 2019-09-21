@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -16,6 +15,7 @@ import (
 
 // Heartbeat just sends back some text to make sure it's alive
 func Heartbeat(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(200)
 	w.Write([]byte("im awake i swear"))
 }
@@ -62,11 +62,15 @@ func ListBuckets(w http.ResponseWriter, r *http.Request) {
 		Region: aws.String("us-east-1"),
 	})
 
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	}
+
 	svc := s3.New(sess)
 
 	result, err := svc.ListBuckets(nil)
 	if err != nil {
-		log.Fatalf("Unable to list buckets, %v", err)
+		w.Write([]byte(err.Error()))
 	}
 
 	var res ListResponse
