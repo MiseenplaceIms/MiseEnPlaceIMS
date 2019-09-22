@@ -13,7 +13,7 @@ WORKDIR /opt/node_app
 # but we have to manually enable it. put it here so npm installs dependencies as the same
 # user who runs the app. 
 USER node
-COPY package.json yarn-lock.json ./
+COPY package.json package-lock.json ./
 RUN npm install --no-optional && npm cache clean --force
 ENV PATH /opt/node_app/node_modules/.bin:$PATH
 
