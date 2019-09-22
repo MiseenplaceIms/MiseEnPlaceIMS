@@ -1,26 +1,28 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
+	"goji.io"
+	"goji.io/pat"
 )
 
 func main() {
-	router := mux.NewRouter()
+	router := goji.NewMux()
+	ctx := context.Background()
 	//config := config.GetConfig()
 
-	router.HandleFunc("/status", Heartbeat).Methods("GET")
-	router.HandleFunc("/list", ListBuckets).Methods("GET")
-	router.HandleFunc("/get", GetAll).Methods("GET")
-	router.HandleFunc("/get/{id}", GetItem).Methods("GET")
-	router.HandleFunc("/add", AddItem).Methods("POST")
-	router.HandleFunc("/delete/{id}", DeleteItem).Methods("DELETE")
-	router.HandleFunc("/update/{id}", UpdateItem).Methods("PUT")
+	router.HandleFunc(pat.Get("/status"), Heartbeat(ctx))
+	router.HandleFunc(pat.Get("/get"), GetAll(ctx))
+	router.HandleFunc(pat.Get("/get/:id"), GetItem(ctx))
+	router.HandleFunc(pat.Post("/add"), AddItem(ctx))
+	router.HandleFunc(pat.Delete("/delete/:id"), DeleteItem(ctx))
+	router.HandleFunc(pat.Put("/update/:id"), UpdateItem(ctx))
 
 	fmt.Println("Inventory service is online")
 	logger := handlers.LoggingHandler(os.Stdout, router)
