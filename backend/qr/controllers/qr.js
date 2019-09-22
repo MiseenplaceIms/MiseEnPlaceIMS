@@ -4,7 +4,7 @@ const router = express.Router();
 const QRCode = require("qrcode");
 const AWS = require("aws-sdk");
 
-const upload = require("../upload");
+const upload = require("../helpers/upload");
 const singleUpload = upload.single("qr-code");
 
 AWS.config.update({ region: "us-east-1" });
