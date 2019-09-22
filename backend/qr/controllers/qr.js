@@ -4,11 +4,9 @@ const router = express.Router();
 const QRCode = require("qrcode");
 const AWS = require("aws-sdk");
 
-const upload = require("../helpers/upload");
-const singleUpload = upload.single("qr-code");
-
 AWS.config.update({ region: "us-east-1" });
 const docClient = new AWS.DynamoDB.DocumentClient();
+const s3 = new AWS.S3();
 
 router.route("/scan/:v_id/:i_id").get(async (req, res) => {
   const { v_id, i_id } = req.params;
@@ -52,35 +50,49 @@ router.route("/generate").post(async (req, res) => {
   try {
     const qr_code = await QRCode.toDataURL(`${venue_id},${item_id}`);
 
-    // // upload image to s3 and store response into const
-    // const location = await uploadQR()
-    // if (location) {
-    //     // post to database
-    // }
+    const uploadParams = {
+      Bucket: "mise-en-place-qr-codes",
+      Key: `test_${Date.now()}.jpg`,
+      Body: new Buffer.from(
+        qr_code.replace(/^data:image\/\w+;base64,/, ""),
+        "base64"
+      ),
+      ContentEncoding: "base64",
+      ContentType: "image/jpeg"
+    };
 
-    singleUpload(req, res, async err => {
+    await s3.upload(uploadParams, async (err, data) => {
       if (err) {
-        res.status(422).json({ error: `QR code upload error: ${err}` });
-      }
+        // error occurred during upload
+        console.log("upload error: ", err);
+      } else {
+        console.log("upload data: ", data);
+        // data was saved correctly and Location was generated
+        if (data.Location) {
+          const params = {
+            TableName: "entries",
+            Item: {
+              venue_id: `${venue_id}`,
+              item_id: `${item_id}`,
+              item: { ...rest, qr_code }
+            }
+          };
 
-      const params = {
-        TableName: "entries",
-        Item: {
-          venue_id: `${venue_id}`,
-          item_id: `${item_id}`,
-          item: { ...rest, qr_code }
-        }
-      };
+          await docClient.put(params, (err, data) => {
+            if (err) {
+              res.status(500).json({ error: `Unable to add item: ${err}` });
+            } else {
+              console.log("success!");
+            }
+          });
 
-      await docClient.put(params, (err, data) => {
-        if (err) {
-          res.status(500).json({ error: `Unable to add item: ${err}` });
+          res.status(200).json({ qr_code });
         } else {
-          console.log("success!");
+          res.status(500).json({
+            error: "An error occurred while saving that entry to s3."
+          });
         }
-      });
-
-      res.status(200).json({ qr_code });
+      }
     });
   } catch (error) {
     console.error(error);
