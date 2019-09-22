@@ -4,6 +4,7 @@ package main
 type Item struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
+	QRCode      string `json:"qr_code"`
 	Quantity    int    `json:"quantity"`
 	Purveyour   string `json:"purveyour"`
 	UnitPrice   string `json:"price_per_item"`

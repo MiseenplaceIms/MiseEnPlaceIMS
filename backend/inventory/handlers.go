@@ -2,11 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
-	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/guregu/dynamo"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -25,21 +24,54 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 // GetAll returns all of the items in a user's inventory
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	client, err := GetClient()
+	db := dynamo.New(session.New(), &aws.Config{Region: aws.String("us-east-1")})
+	table := db.Table("venues")
+
+
+	fmt.Println("Got session")
+
+	results := []Item
+	fmt.Println("Scanning table")
+	err := table.Scan().All(&results)
+
 	if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
+		fmt.Println("Error: " + err)
 	}
 
-	req := &dynamodb.DescribeTableInput{
-		TableName: aws.String("venues"),
-	}
-	result, err := client.DescribeTable(req)
-	if err != nil {
-		fmt.Printf("%s", err)
-	}
-	table := result.Table
-	json.NewEncoder(w).Encode(table)
+	fmt.Println("No errors")
+	json.NewEncoder(w).Encode(results)
+
+	// fmt.Println("Hit GetAll")
+	// client, err := GetClient()
+	// if err != nil {
+	// 	w.WriteHeader(500)
+	// 	w.Write([]byte(err.Error()))
+	// }
+	// fmt.Println("got client")
+
+	// result, err := client.Scan(&dynamodb.ScanInput{
+	// 	TableName: aws.String("venues"),
+	// })
+	// fmt.Println("scanning table")
+
+	// if err != nil {
+	// 	fmt.Printf("%s", err)
+	// }
+
+	// obj := []Item{}
+	// err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &obj)
+	// if err != nil {
+	// 	w.WriteHeader(500)
+	// 	w.Write([]byte(err.Error()))
+	// }
+	// fmt.Println("unmarshalling data")
+
+	// err = json.NewEncoder(w).Encode(obj)
+	// if err != nil {
+	// 	w.Write([]byte(err.Error()))
+	// }
 }
 
 // GetItem returns the information for a single item
@@ -48,6 +80,7 @@ func GetItem(w http.ResponseWriter, r *http.Request) {
 	item := Item{
 		ID:          "bruh",
 		Name:        "bruh",
+		QRCode:      "",
 		Quantity:    1,
 		Purveyour:   "",
 		UnitPrice:   "",
@@ -62,8 +95,34 @@ func GetItem(w http.ResponseWriter, r *http.Request) {
 
 // AddItem adds an item to a users inventory
 func AddItem(w http.ResponseWriter, r *http.Request) {
-	// add to db
-	// add message to queue to update cache
+	db := dynamo.New(session.New(), &aws.Config{Region: aws.String("us-east-1")})
+	table := db.Table("venues")
+
+	fmt.Println("Got session")
+
+	item := Item{
+		ID:          "test",
+		Name:        "test",
+		QRCode:      "test",
+		Quantity:    1,
+		Purveyour:   "test",
+		UnitPrice:   "test",
+		UnitWeight:  "test",
+		Unit:        "test",
+		LastUsed:    "test",
+		DateBought:  "test",
+		LastUpdated: "test",
+	}
+
+	fmt.Println("Scanning")
+	err := table.Put(item).Run()
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+		fmt.Println("error: " + err)
+	}
+	fmt.Println("No errors")
+	w.Write([]byte("Added"))
 }
 
 // DeleteItem deletes an item from a user's inventory

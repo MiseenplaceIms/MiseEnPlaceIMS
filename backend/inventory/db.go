@@ -15,7 +15,7 @@ func GetClient() (*dynamodb.DynamoDB, error) {
 	}
 
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-west-2"),
+		Region: aws.String("us-east-1"),
 	})
 
 	if err != nil {
