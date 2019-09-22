@@ -83,7 +83,7 @@ export default class Form extends Component {
                 />
 
                 <TouchableOpacity style={styles.button}> 
-                    <Text style={styles.buttonText} onPress={this.saveData}>{this.props.type}</Text>
+                    <Text style={styles.buttonText} onPress={this.saveData}>Get Started</Text>
                 </TouchableOpacity>
             </View>
             
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     },
     button: {
         width: 300,
-        backgroundColor: '#4f83cc',
+        backgroundColor: 'black',
         borderRadius: 25,
         marginVertical: 10,
         paddingVertical: 12
